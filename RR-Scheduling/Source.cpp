@@ -1,118 +1,103 @@
 #include <stdio.h>
-#include <iostream>
-#include <cstdio> 
-#define NUM_PROC 1000 
-#define SWITCH_OVERHEAD 1 
-#define TIME_QUANTUM 2 
-using namespace std; 
-// Function to find the waiting time for all 
-// processes 
-int findWaitingTime(int n, int bt[], int wt[], int rt[], int quantum) 
-{ 
-	// Make a copy of burst times bt[] to store remaining 
-	// burst times. 
-	int rem_bt[n]; 
-	for (int i = 0 ; i < n ; i++) 
-		rem_bt[i] = bt[i]; 
-	int t = 0; // Current time 
-	// Keep traversing processes in round robin manner 
-	// until all of them are not done. 
-	while (1) { 
-		bool done = true; 
-		// Traverse all processes one by one repeatedly 
-		for (int i = 0 ; i < n; i++) { 
-			if (rem_bt[i] == bt[i]) // first running quantum 
-				rt[i] = t + SWITCH_OVERHEAD; // response time 
-				// If burst time of a process is greater than 0 
-				// then only need to process further 
-				if (rem_bt[i] > 0) { 
-					done = false; // There is a pending process 
-					printf("%5d: SWITCHING %5d\n", t, SWITCH_OVERHEAD); 
-					t = t + SWITCH_OVERHEAD; 
-					if (rem_bt[i] > quantum) { 
-					printf("%5d: proc(%3d) %5d\n", t, i, quantum); 
-					// Increase the value of t i.e. shows 
-					// how much time a process has been processed 
-					t += quantum; 
-					// Decrease the burst_time of current process 
-					// by quantum 
-					rem_bt[i] -= quantum; 
-				} // If burst time is smaller than or equal to 
-				// quantum. Last cycle for this process 
-				else { 
-					printf("%5d: proc(%3d) %5d\n", t, i, rem_bt[i]); 
-					// Increase the value of t i.e. shows 
-					// how much time a process has been processed 
-					t = t + rem_bt[i]; 
-					// Waiting time is current time minus time 
-					// used by this process 
-					wt[i] = t - bt[i]; 
-					// As the process gets fully executed 
-					// make its remaining burst time = 0 
-					rem_bt[i] = 0; 
-				} 
-			} // if 
-		} // for 
-		// If all processes are done 
-		if (done == true) 
-			break; 
-	} 
-	return t; // Completion time 
-} 
-// Function to calculate turn around time 
-void findTurnAroundTime(int n, int bt[], int wt[], int tat[]) 
-{ 
-	// calculating turnaround time by adding 
-	// bt[i] + wt[i] 
-	for (int i = 0; i < n ; i++) 
-		tat[i] = bt[i] + wt[i]; 
-} 
-// Function to calculate average time 
-void findavgTime(int n, int bt[], int quantum) 
-{ 
-	int wt[n], tat[n], total_wt = 0, total_tat = 0; 
-	int rt[n], total_rt = 0; // response time 
-	int ct; // completion time 
-	// Function to find waiting time of all processes 
-	ct = findWaitingTime(n, bt, wt, rt, quantum); 
-	// Function to find turn around time for all processes 
-	findTurnAroundTime(n, bt, wt, tat); 
-	printf("Switching Time = %d\n", SWITCH_OVERHEAD); 
-	printf("Time Quantum = %d\n", TIME_QUANTUM); printf("ProcessID Arrival Time Burst Time Waiting Time Turnaround Time Response Time\n"); 
-	for (int i = 0 ; i < n ; i++) { 
-		total_wt = total_wt + wt[i]; 
-		total_tat = total_tat + tat[i]; 
-		total_rt = total_rt + rt[i]; 
-		int compl_time = tat[i] + 0; 
-		printf(" %5d %7d %7d %7d %7d %7d\n", i, 0, bt[i], wt[i], tat[i], rt[i]); 
-	} 
-	printf("Avg. Waiting Time = %9.2f\n", (float)total_wt / (float)n); 
-	printf("Avg. Turnaround Time = %9.2f\n", (float)total_tat / (float)n); 
-	printf("Avg. Response Time = %9.2f\n", (float)total_rt / (float)n); 
-	printf("Completion Time = %6d\n", ct); 
-	printf("Thoughput(#Jobs/Time)= %9.2f\n", (float)n / (float)ct); 
-} 
-int inputData(int burst_time[]) 
-{ 
-	int i = 0; 
-	int num; 
-	do { 
-		num = scanf("%d", &burst_time[i]); 
-		if (num <= 0) // End-of-file or zero data 
-			break; 
-		i++; 
-	} while (1); 
-	return i; 
-} 
-// Driver code 
-int main() 
-{ 
-	// Burst time of all processes 
-	int burst_time[NUM_PROC]; 
-	int n; 
-	n = inputData(burst_time); 
-	// Time quantum 
-	int quantum = TIME_QUANTUM; 
-	findavgTime(n, burst_time, quantum); 
-	return 0; 
+#define _CRT_SECURE_NO_WARNINGS
+#define SIZE 100
+
+static char job[SIZE];			//작업이름 입력
+static int ATime[SIZE] = { 0 };	//작업의 도착시간 저장
+static int CPUc[SIZE] = { 0 };	//작업의 CPU 사이클 저장
+static int CPUcb[SIZE] = { 0 };	//작업의 CPU 사이클 백업
+static int TTime[SIZE] = { 0 };	//작업의 반환시간 저장
+static int TimeQ;				//CPU 할당 시간 (단위: ms)
+static double avgT;				//작업의 평균 반환시간 저장
+static int ti;					//반복문 i의 최종 개수=작업의 수
+static int ini = 0;				//초기화된 CPU 사이클 수 저장
+static int totT = 0;				//총 반환시간
+
+void RR_Scheduler();
+
+void Result();
+void resort();
+
+void main()
+{
+	int i = 0;
+
+	printf("CPU 할당 시간을 입력하세요: ");
+	scanf("%d", &TimeQ);
+
+	//작업 도착 순서대로 입력 받기
+	while(1){
+		printf("작업의 이름을 입력하세요: ");
+		scanf("%s", &job[i]);
+		if (job[i] == '!'){
+			break;	//느낌표 입력시 입력(while문) 종료
+		}
+		ATime[i] = i;		//작업 도착시간 저장
+
+		printf("작업의 CPU 사이클을 입력하세요: ");
+		scanf("%d", &CPUc[i]);
+		CPUcb[i] = CPUc[i];	//사이클 백업
+
+		i++;
+	}
+	ti = i;	//i값을 전역변수 ti에 백업
+
+	RR_Scheduler();	//RR 스케줄러 호출
+	Result();		//결과 출력
+	//resort();		//결과 출력
+
+}
+
+void RR_Scheduler() // Round Robin 스케줄러
+{
+	while (1){
+		if (ini == ti){
+			printf("\n작업 할당 종료\n");
+			//모든 작업이 할당 완료됨
+			break;	//더이상 할당할 작업이 없음
+		}
+		for (int k = 0; k < ti; k++)
+		{
+			if (CPUc[k] != 0){
+
+				if (CPUc[k] > TimeQ){
+					//작업의 CPU 사이클 - 할당시간을 해주고
+					//할당시간만큼 작업의 반환시간에 더해주기
+					CPUc[k] -= TimeQ;
+					
+					TTime[k] = TimeQ + totT;
+					totT += TimeQ;	//간트차트 끝부분 측정하기
+					printf("%c 반환 시간 : %d \n", job[k], TTime[k]);
+				}
+				else{
+					//남은 작업의 CPU 사이클을 반환시간에 더해주기
+					//해당 작업 남은 CPU 사이클 0으로 초기화
+					TTime[k] = CPUc[k] + totT;
+					totT += CPUc[k];	//간트차트 끝부분 측정하기
+					CPUc[k] = 0;
+					ini++;
+
+				}
+			}
+		}
+	}
+	
+}
+
+void Result() // 결과 출력
+{
+	for (int i = 0; i < ti; i++){
+		printf("작업 이름 : %c \n", job[i]);
+		printf("반환 시간 : %d \n\n", TTime[i] - i);
+
+		avgT += (TTime[i] - i);
+	}
+	avgT = avgT / ti;
+
+	printf("평균 반환 시간: %lf \n", avgT);
+}
+
+void resort()	//정렬
+{
+	
 }
