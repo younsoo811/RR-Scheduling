@@ -1,7 +1,7 @@
 #include <stdio.h>
 #define SIZE 100
 
-static char job[SIZE];			//작업이름 입력
+static char job[SIZE] { 0 };	//작업이름 입력
 static int CPUc[SIZE] = { 0 };	//작업의 CPU 사이클 저장
 static int CPUcb[SIZE] = { 0 };	//작업의 CPU 사이클 백업
 static int TTime[SIZE] = { 0 };	//작업의 반환시간 저장
@@ -18,7 +18,7 @@ void main()
 {
 	int i = 0;	//작업 도착시간
 
-	printf("CPU 시간 할당량을 입력하세요 (정수 입력하기): ");
+	printf("CPU 할당 시간을 입력하세요 (정수 입력하기): ");
 	scanf("%d", &TimeQ);
 	printf("\n");
 
@@ -94,5 +94,5 @@ void Print_RR() // 결과 출력
 	//모든 작업의 반환시간의 평균을 구하기
 	avgT = avgT / ti;
 
-	printf("평균 반환 시간: %.2lf \n\n", avgT);
+	printf("평균 반환 시간: %.2lfms \n\n", avgT);
 }
